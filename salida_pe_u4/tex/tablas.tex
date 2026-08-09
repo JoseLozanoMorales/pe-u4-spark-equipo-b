@@ -1,0 +1,54 @@
+\begin{table}[htbp]
+\centering
+\caption{Tiempos medianos de ejecucion (5 repeticiones) y speedup obtenido con PySpark en local[4].}
+\label{tab:tiempos}
+\small
+\begin{tabular}{llrrrr}
+\toprule
+\textbf{TX} & \textbf{Transformacion} & $T_{pandas}$ (s) & $T_{spark}$ (s) & $S$ & CV (\%) \\
+\midrule
+T1 & Filtrado por condicion compuesta & 0.1029 & 0.8025 & 0.128 & 24.0 \\
+T2 & Groupby + agregacion (5 funciones) & 0.1304 & 0.7533 & 0.173 & 8.0 \\
+T3 & Join de 4 DataFrames por UUID & 1.5103 & 11.2780 & 0.134 & 8.1 \\
+T4 & Columna derivada compleja & 0.3238 & 0.9345 & 0.346 & 38.0 \\
+T5 & Ordenamiento y top-100 & 0.4159 & 0.5157 & 0.806 & 7.8 \\
+\bottomrule
+\end{tabular}
+\\[2pt]\footnotesize CV = coeficiente de variacion de las mediciones en PySpark.
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Escalado de la transformacion T3 (join) con 1, 2 y 4 executors y estimacion de la fraccion paralelizable.}
+\label{tab:amdahl}
+\small
+\begin{tabular}{rrrrr}
+\toprule
+$N$ & $T_{spark}$ (s) & $S(N)$ & $E=S/N$ & $p$ estimada \\
+\midrule
+1 & 11.9804 & 1.000 & 1.000 & --- \\
+2 & 11.8804 & 1.008 & 0.504 & 0.0167 \\
+4 & 9.9092 & 1.209 & 0.302 & 0.2305 \\
+\bottomrule
+\end{tabular}
+\\[2pt]\footnotesize $p$ promedio = 0.1236; $S_{max}$ = 1.141; $N_{90}$ = 2.
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Verificacion de equivalencia de resultados entre pandas y PySpark.}
+\label{tab:verificacion}
+\small
+\begin{tabular}{lrrrrc}
+\toprule
+\textbf{TX} & Filas pandas & Filas Spark & Firma pandas & Firma Spark & Identico \\
+\midrule
+T1 & 56,559 & 56,559 & 1,978,733.00 & 1,978,733.00 & Si \\
+T2 & 720 & 720 & 14,304,236.00 & 14,304,236.00 & Si \\
+T3 & 520,000 & 520,000 & 14,304,236.00 & 14,304,236.00 & Si \\
+T4 & 520,000 & 520,000 & 1,071,375.00 & 1,071,375.00 & Si \\
+T5 & 100 & 100 & 5,000.00 & 5,000.00 & Si \\
+\bottomrule
+\end{tabular}
+\\[2pt]\footnotesize Firma = suma de la columna representativa de cada transformacion.
+\end{table}

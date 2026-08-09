@@ -1,0 +1,6 @@
+TX,Descripcion,T_pandas_s,T_spark_s,T_pandas_us,T_spark_us,Speedup,CV_pandas_pct,CV_spark_pct,Ganancia
+T1,Filtrado por condicion compuesta,0.102893,0.802504,102892.8,802503.7,0.1282,17.37,24.0,NO
+T2,Groupby + agregacion (5 funciones),0.130419,0.753264,130419.1,753264.1,0.1731,1.7,7.99,NO
+T3,Join de 4 DataFrames por UUID,1.510329,11.277967,1510328.6,11277967.3,0.1339,1.13,8.11,NO
+T4,Columna derivada compleja,0.323776,0.934518,323775.7,934517.6,0.3465,1.45,37.95,NO
+T5,Ordenamiento y top-100,0.415923,0.515745,415922.8,515745.4,0.8064,11.14,7.77,NO

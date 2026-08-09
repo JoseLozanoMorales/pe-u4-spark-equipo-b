@@ -1,0 +1,120 @@
+
+========================================================================
+PASO 1 - Dataset y carga
+========================================================================
+[dataset] generado en 7.48 s
+[dataset] solicitudes        (520000, 12)   (147.8 MB)
+[dataset] reservas            (286216, 9)
+[dataset] laboratorios          (120, 11)
+[dataset] perfiles            (15000, 11)
+[dataset] materias                (12, 5)
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+26/08/08 20:23:41 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+
+Verificacion de carga pandas vs. Spark:
+  solicitudes    pandas= 520,000  spark= 520,000  OK
+  reservas       pandas= 286,216  spark= 286,216  OK
+  laboratorios   pandas=     120  spark=     120  OK
+  perfiles       pandas=  15,000  spark=  15,000  OK
+  materias       pandas=      12  spark=      12  OK
+
+root
+ |-- solicitud_id: string (nullable = true)
+ |-- solicitante_id: string (nullable = true)
+ |-- docente_id: string (nullable = true)
+ |-- laboratorio_id: string (nullable = true)
+ |-- materia_id: string (nullable = true)
+ |-- periodo_lectivo_id: string (nullable = true)
+ |-- fecha_reserva: date (nullable = true)
+ |-- hora_inicio: integer (nullable = true)
+ |-- hora_fin: integer (nullable = true)
+ |-- numero_participantes: integer (nullable = true)
+ |-- motivo: string (nullable = true)
+ |-- estado_solicitud: string (nullable = true)
+
+
+========================================================================
+PASO 2 - Implementacion secuencial con pandas
+========================================================================
+[pandas] T1 Filtrado por condicion compuesta mediana=     102,893 us (0.1029 s)  CV=17.4%
+[pandas] T2 Groupby + agregacion (5 funciones) mediana=     130,419 us (0.1304 s)  CV=1.7%
+[pandas] T3 Join de 4 DataFrames por UUID mediana=   1,510,329 us (1.5103 s)  CV=1.1%
+[pandas] T4 Columna derivada compleja    mediana=     323,776 us (0.3238 s)  CV=1.5%
+[pandas] T5 Ordenamiento y top-100       mediana=     415,923 us (0.4159 s)  CV=11.1%
+
+[pandas] T1:   56,559 filas x 12 cols -> /content/proyecto/salida_pe_u4/data/pandas/T1_resultado.csv
+[pandas] T2:      720 filas x  7 cols -> /content/proyecto/salida_pe_u4/data/pandas/T2_resultado.csv
+[pandas] T3:  520,000 filas x 36 cols -> /content/proyecto/salida_pe_u4/data/pandas/T3_resultado.csv
+[pandas] T4:  520,000 filas x 16 cols -> /content/proyecto/salida_pe_u4/data/pandas/T4_resultado.csv
+[pandas] T5:      100 filas x 12 cols -> /content/proyecto/salida_pe_u4/data/pandas/T5_resultado.csv
+
+========================================================================
+PASO 3 - Implementacion distribuida con PySpark (local[4])
+========================================================================
+[spark ] T1 Filtrado por condicion compuesta mediana=     802,504 us (0.8025 s)  CV=24.0%
+[spark ] T2 Groupby + agregacion (5 funciones) mediana=     753,264 us (0.7533 s)  CV=8.0%
+[spark ] T3 Join de 4 DataFrames por UUID mediana=  11,277,967 us (11.2780 s)  CV=8.1%
+[spark ] T4 Columna derivada compleja    mediana=     934,518 us (0.9345 s)  CV=38.0%
+[spark ] T5 Ordenamiento y top-100       mediana=     515,745 us (0.5157 s)  CV=7.8%
+
+[spark ] T1:   56,559 filas -> /content/proyecto/salida_pe_u4/data/spark/T1_resultado
+[spark ] T2:      720 filas -> /content/proyecto/salida_pe_u4/data/spark/T2_resultado
+[spark ] T3:  520,000 filas -> /content/proyecto/salida_pe_u4/data/spark/T3_resultado
+[spark ] T4:  520,000 filas -> /content/proyecto/salida_pe_u4/data/spark/T4_resultado
+[spark ] T5:      100 filas -> /content/proyecto/salida_pe_u4/data/spark/T5_resultado
+
+========================================================================
+PASO 3.5 - Verificacion de equivalencia de resultados
+========================================================================
+TX      filas pandas   filas spark       cols      firma pandas       firma spark     err.rel   estado
+T1            56,559        56,559    12/12        1,978,733.00      1,978,733.00    0.00e+00   IDENTICO
+T2               720           720     7/7        14,304,236.00     14,304,236.00    0.00e+00   IDENTICO
+T3           520,000       520,000    36/36       14,304,236.00     14,304,236.00    0.00e+00   IDENTICO
+T4           520,000       520,000    16/16        1,071,375.00      1,071,375.00    0.00e+00   IDENTICO
+T5               100           100    12/12            5,000.00          5,000.00    0.00e+00   IDENTICO
+
+========================================================================
+PASO 3.6 - Escalado de T3 con 1, 2 y 4 executors
+========================================================================
+[spark ] T3 con N=1 executor(s)          mediana=  11,980,450 us (11.9804 s)  CV=12.1%
+         particiones=8 (fijas) | master=local[1]
+[spark ] T3 con N=2 executor(s)          mediana=  11,880,410 us (11.8804 s)  CV=12.4%
+         particiones=8 (fijas) | master=local[2]
+[spark ] T3 con N=4 executor(s)          mediana=   9,909,173 us (9.9092 s)  CV=9.4%
+         particiones=8 (fijas) | master=local[4]
+
+========================================================================
+PASO 4 - Analisis cuantitativo (Ley de Amdahl)
+========================================================================
+TX                        Descripcion  T_pandas_s  T_spark_s  Speedup Ganancia
+T1   Filtrado por condicion compuesta    0.102893   0.802504   0.1282       NO
+T2 Groupby + agregacion (5 funciones)    0.130419   0.753264   0.1731       NO
+T3      Join de 4 DataFrames por UUID    1.510329  11.277967   0.1339       NO
+T4          Columna derivada compleja    0.323776   0.934518   0.3465       NO
+T5             Ordenamiento y top-100    0.415923   0.515745   0.8064       NO
+
+ N  T_spark_s  S_medido  Eficiencia  frac_serial  frac_paralela_p
+ 1  11.980450    1.0000      1.0000          NaN              NaN
+ 2  11.880410    1.0084      0.5042       0.9833           0.0167
+ 4   9.909173    1.2090      0.3023       0.7695           0.2305
+
+=== ANALISIS DE AMDAHL (transformacion T3) ===
+Fraccion paralelizable  p      = 0.1236  (12.36 %)
+Fraccion serial         1-p    = 0.8764  (87.64 %)
+Speedup teorico maximo  S_max  = 1.141x
+Procesadores para 90%   N_90   = 1.27 -> 2 procesadores
+Speedup de T3 frente a pandas   = 0.134x
+
+========================================================================
+PASO 4.3 - Figuras y exportacion
+========================================================================
+[figuras] /content/proyecto/salida_pe_u4/figs/fig_a_tiempos.png  (300 DPI)
+[figuras] /content/proyecto/salida_pe_u4/figs/fig_b_speedup_amdahl.png  (300 DPI)
+[figuras] /content/proyecto/salida_pe_u4/figs/fig_c_eficiencia.png  (300 DPI)
+[export] /content/proyecto/salida_pe_u4/tex/tablas.tex
+[export] /content/proyecto/salida_pe_u4/resultados.json
+
+Experimento completado. Salida en: /content/proyecto/salida_pe_u4
+
+Tiempo total: 8.9 minutos
